@@ -53,8 +53,18 @@ func main() {
 			defer infile.Close()
 			input = infile
 		}
-		// TODO: check whether c.Args().Get(0) exist
-		return doConvert(input, c.Args().Get(0))
+		dir := c.Args().Get(0)
+		if _, err := os.Stat(dir); err == nil {
+			return fmt.Errorf("Destination %q exist", dir)
+		} else if os.IsNotExist(err) {
+			err = os.MkdirAll(dir, 0700)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return doConvert(input, dir)
 
 	}
 	app.Run(os.Args)

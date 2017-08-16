@@ -1,5 +1,6 @@
 # docker2oci
 A tool to convert images saved from `docker save` to oci format image
+
 Example:
 
 ```
@@ -26,5 +27,22 @@ $ mkdir bundle
 $ oci-image-tool create --ref latest busybox bundle/
 $ ls bundle/
 config.json  rootfs
+
+```
+
+It also work if `docker save` save serveral images.
+```
+$ docker images busybox
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+busybox             v2                  0f4cf98c1107        4 minutes ago       1.09MB
+busybox             v1                  df8dde2cf4ad        4 minutes ago       1.09MB
+busybox             latest              2b8fd9751c4c        13 months ago       1.09MB
+$ docker save busybox | ./docker2oci busybox
+$ oci-image-tool validate busybox
+oci-image-tool: reference "latest": OK
+oci-image-tool: reference "v1": OK
+oci-image-tool: reference "v2": OK
+busybox: OK
+Validation succeeded
 
 ```

@@ -22,7 +22,7 @@ const (
 	legacyRepositoriesFileName = "repositories"
 )
 
-var appHelpTemplate = `NAME:
+const appHelpTemplate = `NAME:
    {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
 
 USAGE:
@@ -52,7 +52,7 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() == 0 {
-			return fmt.Errorf("Error: destination 'DIRECTORY' of oci image is requred, see 'docker2oci --help'")
+			return fmt.Errorf("Error: destination 'DIRECTORY' of oci image is required, see 'docker2oci --help'")
 		}
 		inputfile := c.String("input")
 
@@ -131,8 +131,6 @@ func doConvert(in io.Reader, out string) (retErr error) {
 		if err != nil {
 			return err
 		}
-		// TODO: use v1.Image to read config from file directly
-		// TODO: move this to a function
 		ociConfig := v1.Image{
 			Created:      &img.Created,
 			Author:       img.Author,

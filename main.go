@@ -22,22 +22,37 @@ const (
 	legacyRepositoriesFileName = "repositories"
 )
 
+var appHelpTemplate = `NAME:
+   {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
+
+USAGE:
+   {{if .UsageText}}{{.UsageText}}{{end}} {{if .Version}}{{if not .HideVersion}}
+
+VERSION:
+   {{.Version}}{{end}}{{end}}{{if .VisibleFlags}}
+
+OPTIONS:
+   {{range $index, $option := .VisibleFlags}}{{if $index}}
+   {{end}}{{$option}}{{end}}{{end}}
+`
+
 func main() {
+	cli.AppHelpTemplate = fmt.Sprintf("%s", appHelpTemplate)
 	app := cli.NewApp()
 	app.Name = "docker2oci"
-	app.Usage = "convert a docker image from docker save to an oci format image"
-	app.ArgsUsage = "[flags] "
+	app.Usage = "convert docker image from docker save to oci format image"
+	app.UsageText = "docker2oci [OPTIONS] DIRECTORY"
 	app.Version = fmt.Sprintf("commit: %s spec version: %s", gitCommit, specs.Version)
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "i,input",
 			Value: "",
-			Usage: "Input of docker image from `FILE`",
+			Usage: "Read image from tar archive `FILE`, instead of STDIN",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
 		if c.NArg() == 0 {
-			return fmt.Errorf("Wrong args format, see usage")
+			return fmt.Errorf("Error: destination 'DIRECTORY' of oci image is requred, see 'docker2oci --help'")
 		}
 		inputfile := c.String("input")
 

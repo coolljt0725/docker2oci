@@ -1,7 +1,30 @@
 # docker2oci
-A tool to convert images saved from `docker save` to oci format image
 
-Example:
+A tool to convert images saved from `docker save` to [oci format image](https://github.com/opencontainers/image-spec).
+
+## Installation
+
+```
+go get github.com/coolljt0725/docker2oci
+```
+
+## Build
+
+To build `docker2oci`, the following build system dependencies are required:
+
+* Go 1.8.x or above
+* [vndr](https://github.com/LK4D4/vndr) tool
+
+Build steps:
+```
+$ git clone https://github.com/coolljt0725/docker2oci $GOPATH/src/github.com/coolljt0725/docker2oci
+$ cd $GOPATH/src/github.com/coolljt0725/docker2oci
+$ make
+
+```
+
+
+## Example
 
 ```
 $ docker save -o busybox.tar busybox

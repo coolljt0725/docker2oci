@@ -69,8 +69,10 @@ func main() {
 			input = infile
 		}
 		dir := c.Args().Get(0)
-		if _, err := os.Stat(dir); err == nil {
-			return fmt.Errorf("Destination %q exist", dir)
+		if s, err := ioutil.ReadDir(dir); err == nil {
+			if len(s) > 0 {
+				return fmt.Errorf("Destination %q is not empty", dir)
+			}
 		} else if os.IsNotExist(err) {
 			err = os.MkdirAll(dir, 0700)
 			if err != nil {
@@ -79,6 +81,7 @@ func main() {
 		} else {
 			return err
 		}
+
 		return doConvert(input, dir)
 
 	}

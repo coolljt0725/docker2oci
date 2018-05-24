@@ -14,8 +14,8 @@ import (
 type V1Image struct {
 	// Created timestamp when image was created
 	Created time.Time `json:"created"`
-	// ContainerConfig is the configuration of the container that is committed into the image
-	ContainerConfig Config `json:"container_config,omitempty"`
+	// Config is the configuration of the container that is committed into the image
+	Config Config `json:"config,omitempty"`
 	// Author of the image
 	Author string `json:"author,omitempty"`
 	// Architecture is the hardware that the image is build and runs on

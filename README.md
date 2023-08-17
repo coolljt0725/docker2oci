@@ -4,8 +4,16 @@ A tool to convert images saved from `docker save` to [oci format image](https://
 
 ## Installation
 
+For go up to version 1.17, use:
+
 ```
 go get github.com/coolljt0725/docker2oci
+```
+
+For go version 1.17+, use:
+
+```
+go install github.com/coolljt0725/docker2oci@latest
 ```
 
 ## Build

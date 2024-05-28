@@ -100,7 +100,7 @@ loop:
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if fi, err := os.Lstat(path); !(err == nil && fi.IsDir()) {
-				if err2 := os.MkdirAll(path, info.Mode()); err2 != nil {
+				if err2 := os.MkdirAll(path, 0755); err2 != nil {
 					return fmt.Errorf("error creating directory: %v", err2)
 				}
 			}
@@ -143,6 +143,8 @@ loop:
 		}
 		// Directory mtimes must be handled at the end to avoid further
 		// file creation in them to modify the directory mtime
+		// We also have to set the mode at the end in the event that they're read-only
+		// in the tarball.
 		if hdr.Typeflag == tar.TypeDir {
 			dirs = append(dirs, hdr)
 		}
@@ -151,10 +153,13 @@ loop:
 		path := filepath.Join(dest, hdr.Name)
 
 		finfo := hdr.FileInfo()
+		if err := os.Chmod(path, finfo.Mode()); err != nil {
+			return fmt.Errorf("error changing mode: %w", err)
+		}
 		// I believe the old version was using time.Now().UTC() to overcome an
 		// invalid error from chtimes.....but here we lose hdr.AccessTime like this...
 		if err := os.Chtimes(path, time.Now().UTC(), finfo.ModTime()); err != nil {
-			return fmt.Errorf("error changing time: %v", err)
+			return fmt.Errorf("error changing time: %w", err)
 		}
 	}
 	return nil

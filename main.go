@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	specs "github.com/opencontainers/image-spec/specs-go"
 	"github.com/opencontainers/image-spec/specs-go/v1"
@@ -137,8 +138,10 @@ func doConvert(in io.Reader, out string) (retErr error) {
 		ociConfig := v1.Image{
 			Created:      &img.Created,
 			Author:       img.Author,
-			Architecture: img.Architecture,
-			OS:           img.OS,
+			Platform: v1.Platform{
+				Architecture: img.Architecture,
+				OS:           img.OS,
+			},
 			Config: v1.ImageConfig{
 				User:         img.Config.User,
 				ExposedPorts: img.Config.ExposedPorts,
@@ -162,19 +165,53 @@ func doConvert(in io.Reader, out string) (retErr error) {
 		}
 		des.MediaType = v1.MediaTypeImageConfig
 		manifest.Config = des
+		
+		// Process layers concurrently for better performance
+		layerDescriptors := make([]v1.Descriptor, len(img.RootFS.DiffIDs))
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+		var processErr error
+		
 		for i, _ := range img.RootFS.DiffIDs {
-			layerPath := filepath.Join(tmpDir, m.Layers[i])
-			f, err := os.Open(layerPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			des, err := createLayerBlob(out, f)
-			if err != nil {
-				return err
-			}
-			// TODO: detect the tar format, so we know the mediaType
-			des.MediaType = v1.MediaTypeImageLayer
+			wg.Add(1)
+			go func(index int) {
+				defer wg.Done()
+				layerPath := filepath.Join(tmpDir, m.Layers[index])
+				f, err := os.Open(layerPath)
+				if err != nil {
+					mu.Lock()
+					if processErr == nil {
+						processErr = err
+					}
+					mu.Unlock()
+					return
+				}
+				defer f.Close()
+				des, err := createLayerBlob(out, f)
+				if err != nil {
+					mu.Lock()
+					if processErr == nil {
+						processErr = err
+					}
+					mu.Unlock()
+					return
+				}
+				// TODO: detect the tar format, so we know the mediaType
+				des.MediaType = v1.MediaTypeImageLayer
+				
+				mu.Lock()
+				layerDescriptors[index] = des
+				mu.Unlock()
+			}(i)
+		}
+		
+		wg.Wait()
+		if processErr != nil {
+			return processErr
+		}
+		
+		// Add processed layers to manifest
+		for _, des := range layerDescriptors {
 			manifest.Layers = append(manifest.Layers, des)
 		}
 		des, err = createManifestFile(out, manifest)
@@ -183,8 +220,8 @@ func doConvert(in io.Reader, out string) (retErr error) {
 		}
 		des.MediaType = v1.MediaTypeImageManifest
 		des.Platform = &v1.Platform{
-			Architecture: ociConfig.Architecture,
-			OS:           ociConfig.OS,
+			Architecture: ociConfig.Platform.Architecture,
+			OS:           ociConfig.Platform.OS,
 		}
 		des.Annotations = make(map[string]string)
 		// FIXME: a image may have multiple tags

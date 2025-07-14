@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	_ "crypto/sha256"
 	"encoding/json"
@@ -11,6 +12,11 @@ import (
 
 	"github.com/opencontainers/go-digest"
 	"github.com/opencontainers/image-spec/specs-go/v1"
+)
+
+const (
+	// BufferSize for I/O operations - 64KB buffer for optimal performance
+	BufferSize = 64 * 1024
 )
 
 func createLayoutFile(root string) error {
@@ -66,9 +72,13 @@ func createBlob(root string, stream io.Reader) (v1.Descriptor, error) {
 	}
 	defer f.Close()
 
+	// Use buffered writer for better I/O performance
+	writer := bufio.NewWriterSize(f, BufferSize)
+	defer writer.Flush()
+
 	digester := digest.SHA256.Digester()
 	tee := io.TeeReader(stream, digester.Hash())
-	size, err := io.Copy(f, tee)
+	size, err := io.Copy(writer, tee)
 	if err != nil {
 		return v1.Descriptor{}, err
 	}

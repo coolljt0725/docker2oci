@@ -14,6 +14,11 @@ import (
 	"time"
 )
 
+const (
+	// BufferSize for I/O operations - 64KB buffer for optimal performance
+	UnpackBufferSize = 64 * 1024
+)
+
 func getReader(comp string, buf io.Reader) (io.Reader, error) {
 	switch comp {
 	case "gzip":
@@ -111,9 +116,17 @@ loop:
 				return fmt.Errorf("unable to open file: %v", err)
 			}
 
-			if _, err := io.Copy(f, tr); err != nil {
+			// Use buffered writer for better I/O performance
+			writer := bufio.NewWriterSize(f, UnpackBufferSize)
+			if _, err := io.Copy(writer, tr); err != nil {
 				f.Close()
 				return fmt.Errorf("unable to copy: %v", err)
+			}
+			
+			// Ensure all data is written
+			if err := writer.Flush(); err != nil {
+				f.Close()
+				return fmt.Errorf("unable to flush: %v", err)
 			}
 			f.Close()
 

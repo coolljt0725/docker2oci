@@ -1,1 +1,16 @@
+# Binaries
 docker2oci
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Vendor (if needed in future)
+vendor/

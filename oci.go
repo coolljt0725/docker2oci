@@ -5,7 +5,6 @@ import (
 	_ "crypto/sha256"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -20,7 +19,7 @@ func createLayoutFile(root string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(root, v1.ImageLayoutFile), contents, 0644)
+	return os.WriteFile(filepath.Join(root, v1.ImageLayoutFile), contents, 0644)
 }
 
 func createLayerBlob(root string, inTar io.Reader) (v1.Descriptor, error) {
@@ -32,7 +31,7 @@ func createIndexFile(root string, index v1.Index) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(root, "index.json"), content, 0644)
+	return os.WriteFile(filepath.Join(root, "index.json"), content, 0644)
 }
 
 func createManifestFile(root string, manifest v1.Manifest) (v1.Descriptor, error) {

@@ -4,14 +4,6 @@ A tool to convert images saved from `docker save` to [oci format image](https://
 
 ## Installation
 
-For go up to version 1.17, use:
-
-```
-go get github.com/coolljt0725/docker2oci
-```
-
-For go version 1.17+, use:
-
 ```
 go install github.com/coolljt0725/docker2oci@latest
 ```
@@ -20,13 +12,12 @@ go install github.com/coolljt0725/docker2oci@latest
 
 To build `docker2oci`, the following build system dependencies are required:
 
-* Go 1.8.x or above
-* [vndr](https://github.com/LK4D4/vndr) tool
+* Go 1.23 or above
 
 Build steps:
 ```
-$ git clone https://github.com/coolljt0725/docker2oci $GOPATH/src/github.com/coolljt0725/docker2oci
-$ cd $GOPATH/src/github.com/coolljt0725/docker2oci
+$ git clone https://github.com/coolljt0725/docker2oci
+$ cd docker2oci
 $ make
 
 ```

@@ -5,6 +5,3 @@ default: tool
 tool: 
 	go build -ldflags "-X main.gitCommit=${COMMIT}" -o docker2oci .
 
-update:
-	vndr
-

@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	specs "github.com/opencontainers/image-spec/specs-go"
 	"github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var gitCommit = ""
@@ -38,52 +37,54 @@ OPTIONS:
 
 func main() {
 	cli.AppHelpTemplate = fmt.Sprintf("%s", appHelpTemplate)
-	app := cli.NewApp()
-	app.Name = "docker2oci"
-	app.Usage = "convert docker image from docker save to oci format image"
-	app.UsageText = "docker2oci [OPTIONS] DIRECTORY"
-	app.Version = fmt.Sprintf("commit: %s spec version: %s", gitCommit, specs.Version)
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "i,input",
-			Value: "",
-			Usage: "Read image from tar archive `FILE`, instead of STDIN",
+	app := &cli.App{
+		Name:      "docker2oci",
+		Usage:     "convert docker image from docker save to oci format image",
+		UsageText: "docker2oci [OPTIONS] DIRECTORY",
+		Version:   fmt.Sprintf("commit: %s spec version: %s", gitCommit, specs.Version),
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "input",
+				Aliases: []string{"i"},
+				Value: "",
+				Usage: "Read image from tar archive `FILE`, instead of STDIN",
+			},
 		},
-	}
-	app.Action = func(c *cli.Context) error {
-		if c.NArg() == 0 {
-			return fmt.Errorf("Error: destination 'DIRECTORY' of oci image is required, see 'docker2oci --help'")
-		}
-		inputfile := c.String("input")
+		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				return fmt.Errorf("Error: destination 'DIRECTORY' of oci image is required, see 'docker2oci --help'")
+			}
+			inputfile := c.String("input")
 
-		var (
-			input io.Reader = os.Stdin
-		)
+			var (
+				input io.Reader = os.Stdin
+			)
 
-		if inputfile != "" {
-			infile, err := os.Open(inputfile)
-			if err != nil {
+			if inputfile != "" {
+				infile, err := os.Open(inputfile)
+				if err != nil {
+					return err
+				}
+				defer infile.Close()
+				input = infile
+			}
+			dir := c.Args().Get(0)
+			if s, err := os.ReadDir(dir); err == nil {
+				if len(s) > 0 {
+					return fmt.Errorf("Destination %q is not empty", dir)
+				}
+			} else if os.IsNotExist(err) {
+				err = os.MkdirAll(dir, 0700)
+				if err != nil {
+					return err
+				}
+			} else {
 				return err
 			}
-			defer infile.Close()
-			input = infile
-		}
-		dir := c.Args().Get(0)
-		if s, err := ioutil.ReadDir(dir); err == nil {
-			if len(s) > 0 {
-				return fmt.Errorf("Destination %q is not empty", dir)
-			}
-		} else if os.IsNotExist(err) {
-			err = os.MkdirAll(dir, 0700)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
 
-		return doConvert(input, dir)
+			return doConvert(input, dir)
 
+		},
 	}
 	app.Run(os.Args)
 }
@@ -91,7 +92,7 @@ func main() {
 // TODO: need a refactor to split the big function to several
 // small functions
 func doConvert(in io.Reader, out string) (retErr error) {
-	tmpDir, err := ioutil.TempDir("", "docker2oci-docker-")
+	tmpDir, err := os.MkdirTemp("", "docker2oci-docker-")
 	if err != nil {
 		return err
 	}
@@ -126,7 +127,7 @@ func doConvert(in io.Reader, out string) (retErr error) {
 		manifest.SchemaVersion = 2
 
 		configPath := filepath.Join(tmpDir, m.Config)
-		config, err := ioutil.ReadFile(configPath)
+		config, err := os.ReadFile(configPath)
 		if err != nil {
 			return err
 		}
@@ -137,8 +138,10 @@ func doConvert(in io.Reader, out string) (retErr error) {
 		ociConfig := v1.Image{
 			Created:      &img.Created,
 			Author:       img.Author,
-			Architecture: img.Architecture,
-			OS:           img.OS,
+			Platform: v1.Platform{
+				Architecture: img.Architecture,
+				OS:           img.OS,
+			},
 			Config: v1.ImageConfig{
 				User:         img.Config.User,
 				ExposedPorts: img.Config.ExposedPorts,

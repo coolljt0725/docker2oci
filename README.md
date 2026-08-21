@@ -1,3 +1,5 @@
+
+
 # docker2oci
 
 A tool to convert images saved from `docker save` to [oci format image](https://github.com/opencontainers/image-spec).
@@ -42,7 +44,7 @@ or
 ```
 $ docker save busybox | docker2oci busybox
 ```
-Check the the image:
+Check the image:
 ```
 $ find busybox -type f
 busybox/blobs/sha256/8baf43d43a34a0e6649c254b0200c2406fc40a501a852ba51a86ac3672dc0441
